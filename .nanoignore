@@ -1,0 +1,8 @@
+.DS_Store
+.git
+.gitignore
+.composer/
+public/storage/
+.idea/
+Homestead.json
+Homestead.yaml

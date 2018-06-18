@@ -1,0 +1,71 @@
+run.config:
+  engine: php
+  engine.config:
+    runtime: php-7.2
+    webserver: nginx
+    document_root: public
+    nginx_default_gateway: /index.php?$query_string
+    extensions:
+      - ctype
+      - dom
+      - mbstring
+      - tokenizer
+      - session
+      - zip
+      - xml
+      - xmlwriter
+      - pdo
+      - pdo_mysql
+      - pcntl
+      - posix
+      - curl
+      - iconv
+      - intl
+      # - libsodium # Not available for PHP 7+ (yet?)
+      - readline
+    zend_extensions:
+      - opcache
+    dev_zend_extensions:
+      add:
+        - xdebug
+      rm:
+        - opcache
+  extra_packages: # Use node/yarn locally for mix
+    - nodejs
+    - python-2.7
+    - png
+  cache_dirs:
+    - node_modules
+  extra_path_dirs:
+    - node_modules/.bin
+  build_triggers:
+    - package.json
+  extra_steps:
+    - '[[ -e .env ]] || ( cp .env.example .env ; php artisan key:generate )'
+    - yarn # Load node modules and run mix tasks during your build
+    - yarn run dev
+
+deploy.config:
+  extra_steps:
+    - mv .env.prod .env
+    - yarn run production # Run mix tasks when deploying
+  before_live:
+    web.main:
+      - mkdir -p storage/{app,framework/{sessions,cache,views},logs,public}
+      - php artisan migrate --force
+      - php artisan view:clear
+
+web.main:
+  start:
+    php: start-php
+    nginx: start-nginx
+  writable_dirs:
+    - bootstrap/cache
+  network_dirs:
+    data.storage:
+      - storage
+  log_watch:
+    laravel[error]: /app/storage/logs/laravel.log
+
+data.storage:
+  image: nanobox/unfs:0.9
